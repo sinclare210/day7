@@ -34,5 +34,19 @@ contract SimpleIOU{
 
     }
 
+    function depositIntoWallet () public payable onlyRegistered {
+        require (msg.value > 0, "Zero nt allowd");
+        require(msg.sender != address(0), "Not a valid address");
+        
+        balances[msg.sender] += msg.value;
+    }
+
+    function recordDebt (address _debtor, uint256 _amount) public onlyRegistered onlyOwner {
+        require (_amount > 0, "Zero nt allowd");
+        require(_debtor != address(0), "Not a valid address");
+        require(registerdFriends[_debtor], "Not registered");
+        debts[_debtor][msg.sender] += _amount;
+    }
+
 
 }
