@@ -56,6 +56,28 @@ contract SimpleIOU{
         require(balances[msg.sender] >= _amount, "Insufficient funds");
         balances[msg.sender] -= _amount;
         balances[_creditor] += _amount;
+        debts[msg.sender][_creditor] -= _amount;
+    }
+
+    function transferEther ( address payable _to, uint256 _amount ) public onlyRegistered{
+        require (_amount > 0, "Zero nt allowd");
+        require(_to != address(0), "Not a valid address");
+        require(registerdFriends[_to], "Not registered");
+        require(balances[msg.sender] >= _amount, "Insufficient funds");
+        balances[msg.sender] -= _amount;
+        (bool success,) = _to.call{value: _amount}("");
+        require(success, "Failed");
+    }
+
+    function withdraw (uint256 _amount) public onlyRegistered {
+            require (_amount > 0, "Zero nt allowd");
+            balances[msg.sender] -= _amount;
+        (bool success,) = msg.sender.call{value: _amount}("");
+        require(success, "Failed");
+    }
+
+    function checkBalance () public view onlyRegistered returns (uint256){
+        return balances[msg.sender];
     }
 
 
