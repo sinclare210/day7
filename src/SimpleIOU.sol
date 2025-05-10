@@ -1,84 +1,97 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-contract SimpleIOU{
-
+contract SimpleIOU {
     address public owner;
 
-    mapping (address => bool) public registerdFriends;
+    mapping(address => bool) public registeredFriends;
     address[] public friendList;
-    mapping(address => uint256)public balances;
-    mapping(address => mapping (address => uint256)) public debts;
+    mapping(address => uint256) public balances;
+    mapping(address => mapping(address => uint256)) public debts;
 
-    constructor (){
+    // --- Custom Errors ---
+    error NotOwner();
+    error NotRegistered();
+    error AlreadyRegistered();
+    error InvalidAddress();
+    error AmountZero();
+    error NotEnoughBalance();
+    error DebtTooLow();
+    error TransferFailed();
+
+    constructor() {
         owner = msg.sender;
-        registerdFriends[msg.sender] = true;
+        registeredFriends[msg.sender] = true;
         friendList.push(msg.sender);
     }
 
-    modifier onlyOwner () {
-        require(owner == msg.sender, "only the owner can call this function");
+    // --- Modifiers ---
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert NotOwner();
         _;
     }
 
-    modifier onlyRegistered (){
-        require(registerdFriends[msg.sender], "Not registered");
+    modifier onlyRegistered() {
+        if (!registeredFriends[msg.sender]) revert NotRegistered();
         _;
     }
 
-    function addFriend (address _friend) public onlyOwner {
-        require(_friend != address(0), "Not a valid address");
-        require(!registerdFriends[_friend], "Registered");
-         registerdFriends[_friend] = true;
+    // --- Core Functions ---
+
+    function addFriend(address _friend) public onlyOwner {
+        if (_friend == address(0)) revert InvalidAddress();
+        if (registeredFriends[_friend]) revert AlreadyRegistered();
+
+        registeredFriends[_friend] = true;
         friendList.push(_friend);
-
     }
 
-    function depositIntoWallet () public payable onlyRegistered {
-        require (msg.value > 0, "Zero nt allowd");
-        require(msg.sender != address(0), "Not a valid address");
-        
+    function depositIntoWallet() public payable onlyRegistered {
+        if (msg.value == 0) revert AmountZero();
         balances[msg.sender] += msg.value;
     }
 
-    function recordDebt (address _debtor, uint256 _amount) public onlyRegistered onlyOwner {
-        require (_amount > 0, "Zero nt allowd");
-        require(_debtor != address(0), "Not a valid address");
-        require(registerdFriends[_debtor], "Not registered");
+    function recordDebt(address _debtor, uint256 _amount) public onlyRegistered onlyOwner {
+        if (_debtor == address(0)) revert InvalidAddress();
+        if (!registeredFriends[_debtor]) revert NotRegistered();
+        if (_amount == 0) revert AmountZero();
+
         debts[_debtor][msg.sender] += _amount;
     }
 
-    function payFromWallet (address _creditor, uint256 _amount) public onlyRegistered {
-        require (_amount > 0, "Zero nt allowd");
-        require(_creditor != address(0), "Not a valid address");
-        require(!registerdFriends[_creditor], "Already registered");
-        require(debts[msg.sender][_creditor] >= _amount, "debt amount incorrect");
-        require(balances[msg.sender] >= _amount, "Insufficient funds");
+    function payFromWallet(address _creditor, uint256 _amount) public onlyRegistered {
+        if (_creditor == address(0)) revert InvalidAddress();
+        if (!registeredFriends[_creditor]) revert NotRegistered();
+        if (_amount == 0) revert AmountZero();
+        if (debts[msg.sender][_creditor] < _amount) revert DebtTooLow();
+        if (balances[msg.sender] < _amount) revert NotEnoughBalance();
+
         balances[msg.sender] -= _amount;
         balances[_creditor] += _amount;
         debts[msg.sender][_creditor] -= _amount;
     }
 
-    function transferEther ( address payable _to, uint256 _amount ) public onlyRegistered{
-        require (_amount > 0, "Zero nt allowd");
-        require(_to != address(0), "Not a valid address");
-        require(registerdFriends[_to], "Not registered");
-        require(balances[msg.sender] >= _amount, "Insufficient funds");
+    function transferEther(address payable _to, uint256 _amount) public onlyRegistered {
+        if (_to == address(0)) revert InvalidAddress();
+        if (!registeredFriends[_to]) revert NotRegistered();
+        if (_amount == 0) revert AmountZero();
+        if (balances[msg.sender] < _amount) revert NotEnoughBalance();
+
         balances[msg.sender] -= _amount;
-        (bool success,) = _to.call{value: _amount}("");
-        require(success, "Failed");
+        (bool success, ) = _to.call{value: _amount}("");
+        if (!success) revert TransferFailed();
     }
 
-    function withdraw (uint256 _amount) public onlyRegistered {
-            require (_amount > 0, "Zero nt allowd");
-            balances[msg.sender] -= _amount;
-        (bool success,) = msg.sender.call{value: _amount}("");
-        require(success, "Failed");
+    function withdraw(uint256 _amount) public onlyRegistered {
+        if (_amount == 0) revert AmountZero();
+        if (balances[msg.sender] < _amount) revert NotEnoughBalance();
+
+        balances[msg.sender] -= _amount;
+        (bool success, ) = msg.sender.call{value: _amount}("");
+        if (!success) revert TransferFailed();
     }
 
-    function checkBalance () public view onlyRegistered returns (uint256){
+    function checkBalance() public view onlyRegistered returns (uint256) {
         return balances[msg.sender];
     }
-
-
 }
