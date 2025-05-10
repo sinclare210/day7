@@ -78,7 +78,7 @@ contract SimpleIOU {
         if (balances[msg.sender] < _amount) revert NotEnoughBalance();
 
         balances[msg.sender] -= _amount;
-        (bool success, ) = _to.call{value: _amount}("");
+        (bool success,) = _to.call{value: _amount}("");
         if (!success) revert TransferFailed();
     }
 
@@ -87,7 +87,7 @@ contract SimpleIOU {
         if (balances[msg.sender] < _amount) revert NotEnoughBalance();
 
         balances[msg.sender] -= _amount;
-        (bool success, ) = msg.sender.call{value: _amount}("");
+        (bool success,) = msg.sender.call{value: _amount}("");
         if (!success) revert TransferFailed();
     }
 
