@@ -48,5 +48,15 @@ contract SimpleIOU{
         debts[_debtor][msg.sender] += _amount;
     }
 
+    function payFromWallet (address _creditor, uint256 _amount) public onlyRegistered {
+        require (_amount > 0, "Zero nt allowd");
+        require(_creditor != address(0), "Not a valid address");
+        require(!registerdFriends[_creditor], "Already registered");
+        require(debts[msg.sender][_creditor] >= _amount, "debt amount incorrect");
+        require(balances[msg.sender] >= _amount, "Insufficient funds");
+        balances[msg.sender] -= _amount;
+        balances[_creditor] += _amount;
+    }
+
 
 }
