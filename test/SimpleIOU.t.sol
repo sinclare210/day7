@@ -5,18 +5,38 @@ import "forge-std/Test.sol";
 import "../src/SimpleIOU.sol";
 
 contract SimpleIOUTest is Test {
-    SimpleIOU public iou;
+    SimpleIOU public simpleIOU;
+
+    address public owner = address(this);
+
+    address sinc = address(0x1);
 
     function setUp() public {
-        iou = new SimpleIOU();
+        simpleIOU = new SimpleIOU();
     }
 
     // Deployment
-    function testOwnerIsRegisteredOnDeploy() public {}
+    function testOwnerIsRegisteredOnDeploy() public view {
+        assertEq(simpleIOU.registeredFriends(owner), true);
+    }
 
     // Friend Management
-    function testAddFriendByOwner() public {}
-    function testAddFriendFailsIfAlreadyRegistered() public {}
+    function testAddFriendByOwner() public {
+        
+        simpleIOU.addFriend(sinc);
+        assertEq(simpleIOU.registeredFriends(sinc), true);
+        assertEq(simpleIOU.friendList(1), sinc);
+
+    }
+    function testAddFriendFailsIfAlreadyRegistered() public {
+        simpleIOU.addFriend(sinc);
+        assertEq(simpleIOU.registeredFriends(sinc), true);
+        assertEq(simpleIOU.friendList(1), sinc);
+
+        vm.expectRevert(SimpleIOU.AlreadyRegistered.selector);
+        simpleIOU.addFriend(sinc);
+
+    }
     function testAddFriendFailsIfNotOwner() public {}
     function testAddFriendFailsIfAddressIsZero() public {}
 
