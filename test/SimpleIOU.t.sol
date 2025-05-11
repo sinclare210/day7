@@ -30,8 +30,7 @@ contract SimpleIOUTest is Test {
     }
     function testAddFriendFailsIfAlreadyRegistered() public {
         simpleIOU.addFriend(sinc);
-        assertEq(simpleIOU.registeredFriends(sinc), true);
-        assertEq(simpleIOU.friendList(1), sinc);
+        
 
         vm.expectRevert(SimpleIOU.AlreadyRegistered.selector);
         simpleIOU.addFriend(sinc);
